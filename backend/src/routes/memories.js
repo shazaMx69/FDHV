@@ -101,7 +101,7 @@ async function serializeMemory (row, { locked = false } = {}) {
   }
 }
 
-async function enrichMemoriesWithInheritance (memories, userId, familyId) {
+async function enrichMemoriesWithInheritance (memories, userId, familyId, userRole) {
   if (!memories?.length) return memories
 
   const memoryIds = memories.map((m) => m.id)
@@ -127,13 +127,20 @@ async function enrichMemoriesWithInheritance (memories, userId, familyId) {
     rulesByMemory[rule.memory_id].push(rule)
   }
 
-  return Promise.all(
+  const enriched = await Promise.all(
     memories.map(async (memory) => {
+      const memoryRules = rulesByMemory[memory.id] || []
       const lock = evaluateMemoryLockForUser({
-        rules: rulesByMemory[memory.id] || [],
+        rules: memoryRules,
         userNodeIds,
         nodesById
       })
+
+      // Admins and the creator can always see the memory metadata, even if locked/hidden for others
+      const canSeeMetadata = userRole === 'ADMIN' || memory.created_by === userId || !lock.hidden
+
+      if (!canSeeMetadata) return null
+
       const serialized = await serializeMemory(memory, { locked: lock.locked })
       if (lock.locked) {
         serialized.inheritance_info = {
@@ -145,6 +152,8 @@ async function enrichMemoriesWithInheritance (memories, userId, familyId) {
       return serialized
     })
   )
+
+  return enriched.filter(m => m !== null)
 }
 
 // Upload media file to Supabase Storage (service role — works on web & mobile)
@@ -279,7 +288,12 @@ router.get('/', requireFamilyRole(['ADMIN', 'ADULT', 'JUNIOR']), async (req, res
     }
 
     const userId = req.auth.user.id
-    const memories = await enrichMemoriesWithInheritance(data ?? [], userId, familyId)
+    const memories = await enrichMemoriesWithInheritance(
+      data ?? [],
+      userId,
+      familyId,
+      req.auth.familyRole
+    )
     res.json(memories)
   } catch (err) {
     console.error('List memories error', err)

@@ -18,7 +18,7 @@ export function enforceInheritanceRules () {
       // Load memory, inheritance rules, and associated family & beneficiary nodes
       const { data: memory, error: memoryError } = await supabaseAdmin
         .from('memories')
-        .select('id, family_id')
+        .select('id, family_id, created_by')
         .eq('id', memoryId)
         .single()
 
@@ -49,6 +49,11 @@ export function enforceInheritanceRules () {
         return next()
       }
 
+      // Admins and the creator can always bypass inheritance checks for management
+      if (req.auth.familyRole === 'ADMIN' || memory.created_by === userId) {
+        return next()
+      }
+
       // Find which family tree nodes correspond to this user in this family
       const { data: userNodes, error: nodesError } = await supabaseAdmin
         .from('family_tree_nodes')
@@ -62,10 +67,11 @@ export function enforceInheritanceRules () {
       }
 
       const userNodeIds = (userNodes || []).map(n => n.id)
+      const userIsBeneficiary = rules.some(r => userNodeIds.includes(r.beneficiary_node_id))
 
-      // If the user is not represented in the tree, block access to inheritance-protected content
-      if (userNodeIds.length === 0) {
-        return res.status(403).json({ message: 'User is not linked in family tree; cannot access inheritance-protected memory' })
+      // If the user is not a beneficiary and not an admin/creator, block access
+      if (!userIsBeneficiary) {
+        return res.status(403).json({ message: 'You are not the intended beneficiary of this inheritance memory' })
       }
 
       const now = new Date()

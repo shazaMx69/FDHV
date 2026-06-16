@@ -101,8 +101,13 @@ On first start, `initSchema` will automatically create/update required tables in
     - Lists families the current user belongs to with role.
   - `POST /api/families/:familyId/invite`
     - Role: `ADMIN`
-    - Body: `{ "email": "relative@example.com", "role": "ADULT" | "JUNIOR" | "ADMIN" }`
-    - Records an invitation (actual email sending is left to an external service).
+    - Body: `{ "email": "relative@example.com", "role": "ADMIN" | "ADULT" | "JUNIOR" }`
+    - Records an invitation and sends an email via the email service.
+    - **Roles mapped to UI**: Admin (ADMIN), Editor (ADULT), Viewer (JUNIOR).
+  - `POST /api/invitations/accept`
+    - Auth: Authenticated user.
+    - Body: `{ "token": "<token>" }`
+    - Verifies invitation, adds user to family with the selected role, and marks invite as accepted.
 
 - **Family tree**
   - `POST /api/family-tree/:familyId/nodes`
@@ -184,15 +189,21 @@ On first start, `initSchema` will automatically create/update required tables in
 ### 1.7. Inheritance engine middleware (key logic)
 
 - `enforceInheritanceRules()` is applied to memory access routes (e.g. `GET /api/memories/:memoryId`).
+- `enrichMemoriesWithInheritance()` handles list view visibility and locking logic.
+- **Privacy & Locked Folder**:
+  - If a memory has inheritance rules, it is **hidden** from family members who are not beneficiaries (unless they are `ADMIN` or the creator).
+  - For beneficiaries, the memory appears in the "Locked" filter/folder.
+  - It remains **locked** (metadata only, no media access) until the condition is met (e.g., a specific date or age).
+  - Once the condition is met (e.g., the "selected date"), it becomes fully visible and accessible to the "selected person".
 - Algorithm (simplified):
   1. Fetch memory and associated `inheritance_rules`.
   2. Resolve which `family_tree_nodes` belong to current user in that family.
-  3. If no nodes for the user, deny access when rules exist.
-  4. For each rule where `beneficiary_node_id` matches any user node:
-     - If `UNLOCK_AT_DATE`, deny if `now < unlock_date`.
-     - If `UNLOCK_AT_AGE`, compute beneficiary age from `birth_date` and deny if `age < unlock_age`.
-  5. If all applicable rules are satisfied, request proceeds to controller.
-- Misconfigured rules (e.g. missing `unlock_date` or `unlock_age`) default to **blocking** access to avoid leaking sensitive content.
+  3. If rules exist:
+     - If user is not an `ADMIN`, the creator, or a beneficiary: Hide the memory.
+     - If user is a beneficiary:
+       - If `UNLOCK_AT_DATE`, deny if `now < unlock_date`.
+       - If `UNLOCK_AT_AGE`, compute beneficiary age from `birth_date` and deny if `age < unlock_age`.
+  4. If all applicable rules are satisfied, request proceeds to controller.
 
 ## 2. Mobile app (Flutter)
 

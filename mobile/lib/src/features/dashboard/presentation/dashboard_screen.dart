@@ -442,7 +442,7 @@ class DashboardScreen extends StatelessWidget {
 
   void _showInviteDialog(BuildContext context) {
     final emailController = TextEditingController();
-    String accessLevel = 'edit';
+    String selectedRole = 'ADULT';
 
     showDialog(
       context: context,
@@ -467,23 +467,27 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: accessLevel,
+                value: selectedRole,
                 decoration: const InputDecoration(
-                  labelText: 'Access level',
+                  labelText: 'Family Role',
                   prefixIcon: Icon(Icons.security_outlined),
                 ),
                 items: const [
                   DropdownMenuItem(
-                    value: 'view',
-                    child: Text('View only — browse tree & memories'),
+                    value: 'ADMIN',
+                    child: Text('Admin — full control'),
                   ),
                   DropdownMenuItem(
-                    value: 'edit',
-                    child: Text('Can edit — add members & memories'),
+                    value: 'ADULT',
+                    child: Text('Editor — add memories & tree nodes'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'JUNIOR',
+                    child: Text('Viewer — browse only'),
                   ),
                 ],
                 onChanged: (value) {
-                  if (value != null) setState(() => accessLevel = value);
+                  if (value != null) setState(() => selectedRole = value);
                 },
               ),
             ],
@@ -499,7 +503,7 @@ class DashboardScreen extends StatelessWidget {
                 final familyProvider = context.read<FamilyProvider>();
                 final message = await familyProvider.inviteMember(
                   email: emailController.text.trim(),
-                  accessLevel: accessLevel,
+                  role: selectedRole,
                 );
                 if (context.mounted) {
                   Navigator.pop(context);

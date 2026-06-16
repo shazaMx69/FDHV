@@ -454,7 +454,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final emailController = TextEditingController();
-    String accessLevel = 'edit';
+    String selectedRole = 'ADULT';
 
     showDialog(
       context: context,
@@ -482,23 +482,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: accessLevel,
+                value: selectedRole,
                 decoration: const InputDecoration(
-                  labelText: 'Access level',
+                  labelText: 'Family Role',
                   prefixIcon: Icon(Icons.security_outlined),
                 ),
                 items: const [
                   DropdownMenuItem(
-                    value: 'view',
-                    child: Text('View only'),
+                    value: 'ADMIN',
+                    child: Text('Admin'),
                   ),
                   DropdownMenuItem(
-                    value: 'edit',
-                    child: Text('Can edit'),
+                    value: 'ADULT',
+                    child: Text('Editor'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'JUNIOR',
+                    child: Text('Viewer'),
                   ),
                 ],
                 onChanged: (value) {
-                  if (value != null) setState(() => accessLevel = value);
+                  if (value != null) setState(() => selectedRole = value);
                 },
               ),
             ],
@@ -513,7 +517,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (emailController.text.trim().isEmpty) return;
                 final message = await family.inviteMember(
                   email: emailController.text.trim(),
-                  accessLevel: accessLevel,
+                  role: selectedRole,
                 );
                 if (dialogContext.mounted) {
                   Navigator.pop(dialogContext);

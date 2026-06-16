@@ -81,6 +81,7 @@ class FamilyProvider extends ChangeNotifier {
 
   Future<String?> inviteMember({
     required String email,
+    String? role,
     String accessLevel = 'edit',
   }) async {
     if (_selectedFamily == null) return 'No family selected';
@@ -93,6 +94,7 @@ class FamilyProvider extends ChangeNotifier {
       final result = await services.familyService.inviteMember(
         familyId: _selectedFamily!.id,
         email: email,
+        role: role,
         accessLevel: accessLevel,
       );
       return result['message'] as String? ??

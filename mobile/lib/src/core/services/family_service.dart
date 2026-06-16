@@ -23,11 +23,16 @@ class FamilyService {
   Future<Map<String, dynamic>> inviteMember({
     required String familyId,
     required String email,
+    String? role,
     String accessLevel = 'edit',
   }) async {
     final response = await _client.post(
       '/api/families/$familyId/invite',
-      body: {'email': email, 'accessLevel': accessLevel},
+      body: {
+        'email': email,
+        'accessLevel': accessLevel,
+        if (role != null) 'role': role,
+      },
     );
     return response as Map<String, dynamic>;
   }
