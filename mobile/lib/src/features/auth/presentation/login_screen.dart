@@ -1,6 +1,7 @@
 import 'package:family_digital_heritage_vault/src/core/theme/app_theme.dart';
 import 'package:family_digital_heritage_vault/src/features/auth/presentation/register_screen.dart';
 import 'package:family_digital_heritage_vault/src/features/auth/state/auth_provider.dart';
+import 'package:family_digital_heritage_vault/src/features/main/presentation/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,7 +39,12 @@ class _LoginScreenState extends State<LoginScreen> {
             _emailController.text.trim(),
             _passwordController.text,
           );
-      // Navigation handled automatically by AuthProvider → app.dart Consumer
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+          (route) => false,
+        );
+      }
     } on AuthException catch (e) {
       final msg = e.message.toLowerCase();
       setState(() {
