@@ -111,18 +111,25 @@ class _LogoMark extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 96,
-          height: 96,
+          width: 108,
+          height: 108,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.18),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          child: const Center(
-            child: Text('🏛️', style: TextStyle(fontSize: 46)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: Image.asset(
+              'assets/images/app_icon.png',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         const SizedBox(height: 20),
