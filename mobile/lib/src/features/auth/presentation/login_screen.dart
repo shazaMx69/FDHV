@@ -1,7 +1,6 @@
 import 'package:family_digital_heritage_vault/src/core/theme/app_theme.dart';
 import 'package:family_digital_heritage_vault/src/features/auth/presentation/register_screen.dart';
 import 'package:family_digital_heritage_vault/src/features/auth/state/auth_provider.dart';
-import 'package:family_digital_heritage_vault/src/features/main/presentation/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,107 +21,156 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
 
   @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await context.read<AuthProvider>().signInWithEmail(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
+      // Navigation handled automatically by AuthProvider → app.dart Consumer
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      setState(() {
+        if (msg.contains('email not confirmed')) {
+          _error = 'Confirm your email first, then try again.';
+        } else if (msg.contains('invalid login') ||
+            msg.contains('invalid credentials')) {
+          _error = 'Invalid email or password.';
+        } else {
+          _error = e.message;
+        }
+      });
+    } catch (_) {
+      setState(() => _error = 'Login failed. Check your credentials and try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
+      backgroundColor: AppColors.background,
+      body: SingleChildScrollView(
+        child: Column(
           children: [
-            // Header with gradient
+            // ── Gradient header ─────────────────────────────────────────
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: AppColors.headerGradient,
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
+                  bottomLeft: Radius.circular(36),
+                  bottomRight: Radius.circular(36),
                 ),
               ),
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                   child: Column(
                     children: [
-                      const Text(
-                        'Welcome Back',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
+                      // Back button row
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.arrow_back_ios_new,
+                                color: Colors.white, size: 18),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Heritage Vault',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      const SizedBox(height: 20),
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        child: const Center(
+                          child: Text('🏛️', style: TextStyle(fontSize: 34)),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.account_tree,
-                          size: 32,
+                      const Text(
+                        'Welcome Back',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
-                        'Access your family memories',
+                        'Sign in to your heritage vault',
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
               ),
             ),
-            // Form
+
+            // ── Form ─────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (_error != null) ...[
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.error.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                            color: AppColors.error.withValues(alpha: 0.25)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: AppColors.error),
-                          const SizedBox(width: 8),
+                          Icon(Icons.error_outline,
+                              color: AppColors.error.withValues(alpha: 0.85),
+                              size: 20),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               _error!,
-                              style: const TextStyle(color: AppColors.error),
+                              style: TextStyle(
+                                color: AppColors.error.withValues(alpha: 0.9),
+                                fontSize: 13,
+                                height: 1.4,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                   ],
                   Form(
                     key: _formKey,
@@ -130,21 +178,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         TextFormField(
                           controller: _emailController,
-                          decoration: InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: const Icon(Icons.email_outlined),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                          decoration: const InputDecoration(
+                            labelText: 'Email address',
+                            prefixIcon: Icon(Icons.email_outlined),
                           ),
                           keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
+                          textInputAction: TextInputAction.next,
+                          enabled: !_loading,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
                               return 'Email is required';
                             }
-                            if (!value.contains('@')) {
-                              return 'Enter a valid email';
-                            }
+                            if (!v.contains('@')) return 'Enter a valid email';
                             return null;
                           },
                         ),
@@ -160,23 +205,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
                           ),
                           obscureText: _obscurePassword,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
+                          textInputAction: TextInputAction.done,
+                          enabled: !_loading,
+                          onFieldSubmitted: _loading ? null : (_) => _submit(),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
                               return 'Password is required';
-                            }
-                            if (value.length < 6) {
-                              return 'Password must be at least 6 characters';
                             }
                             return null;
                           },
@@ -184,111 +223,56 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        // TODO: Forgot password
-                      },
-                      child: const Text('Forgot Password?'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   SizedBox(
-                    width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _loading
-                          ? null
-                          : () async {
-                              if (!_formKey.currentState!.validate()) return;
-                              setState(() {
-                                _loading = true;
-                                _error = null;
-                              });
-                              try {
-                                await auth.signInWithEmail(
-                                  _emailController.text.trim(),
-                                  _passwordController.text.trim(),
-                                );
-                                if (mounted) {
-                                  Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (_) => const MainScreen()),
-                                    (route) => false,
-                                  );
-                                }
-                              } on AuthException catch (e) {
-                                setState(() {
-                                  final msg = e.message.toLowerCase();
-                                  if (msg.contains('email not confirmed')) {
-                                    _error =
-                                        'Confirm your email using the link we sent, then try again.';
-                                  } else if (msg.contains('invalid login') ||
-                                      msg.contains('invalid credentials')) {
-                                    _error =
-                                        'Invalid email or password. Please try again.';
-                                  } else {
-                                    _error = e.message;
-                                  }
-                                });
-                              } catch (e) {
-                                setState(() {
-                                  _error =
-                                      'Login failed. Please check your credentials.';
-                                });
-                              } finally {
-                                if (mounted) {
-                                  setState(() {
-                                    _loading = false;
-                                  });
-                                }
-                              }
-                            },
+                      onPressed: _loading ? null : _submit,
                       child: _loading
                           ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2.5),
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white),
                             )
                           : const Text(
-                              'Login',
+                              'Sign In',
                               style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
+                                  fontSize: 17, fontWeight: FontWeight.w700),
                             ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
                         "Don't have an account? ",
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 14),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
-                          );
-                        },
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                              builder: (_) => const RegisterScreen()),
+                        ),
                         child: const Text(
                           'Sign Up',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
           ],
-        ),
         ),
       ),
     );

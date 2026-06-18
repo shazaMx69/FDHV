@@ -157,7 +157,7 @@ export async function createFamilyInvitation ({
     familyName,
     inviterName,
     inviteLink,
-    accessLevel: accessLevel === 'view' ? 'view' : 'edit'
+    role: mappedRole
   })
 
   return { invite, inviteLink, emailResult }

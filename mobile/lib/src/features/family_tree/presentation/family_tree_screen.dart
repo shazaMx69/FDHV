@@ -110,7 +110,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -135,7 +135,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                         familyProvider.selectedFamily?.name ?? 'Your Family Heritage',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       if (familyProvider.families.length > 1) ...[
@@ -194,7 +194,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                                   if (states.contains(WidgetState.selected)) {
                                     return Colors.white;
                                   }
-                                  return Colors.white.withOpacity(0.2);
+                                  return Colors.white.withValues(alpha: 0.2);
                                 }),
                                 foregroundColor: WidgetStateProperty.resolveWith((states) {
                                   if (states.contains(WidgetState.selected)) {
@@ -229,7 +229,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -255,7 +255,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                               vertical: 15,
                             ),
                             hintStyle: TextStyle(
-                              color: AppColors.textSecondary.withOpacity(0.7),
+                              color: AppColors.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
                           onChanged: (value) {
@@ -479,7 +479,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
             Icon(
               isSearching ? Icons.search_off : Icons.family_restroom,
               size: 64,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -1301,7 +1301,7 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -1344,7 +1344,7 @@ class _MemberCard extends StatelessWidget {
         ? Colors.white
         : AppColors.textPrimary;
     final subtitleColor = cardStyle.useLightText
-        ? Colors.white.withOpacity(0.85)
+        ? Colors.white.withValues(alpha: 0.85)
         : AppColors.textSecondary;
 
     return Material(
@@ -1408,7 +1408,7 @@ class _MemberCard extends StatelessWidget {
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: cardStyle.useLightText
-                          ? Colors.black.withOpacity(0.35)
+                          ? Colors.black.withValues(alpha: 0.35)
                           : AppColors.divider,
                       shape: BoxShape.circle,
                     ),
@@ -1433,7 +1433,7 @@ class _MemberCard extends StatelessWidget {
                             ? AppColors.textOnPrimary
                             : AppColors.primary)
                         : (cardStyle.useLightText
-                            ? Colors.white.withOpacity(0.7)
+                            ? Colors.white.withValues(alpha: 0.7)
                             : AppColors.textSecondary),
                     size: 20,
                   ),
@@ -1468,7 +1468,7 @@ class _ActionButton extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: AppColors.primary),

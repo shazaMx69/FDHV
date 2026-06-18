@@ -68,6 +68,10 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
             child: Container(
               decoration: const BoxDecoration(
                 gradient: AppColors.headerGradient,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
               ),
               child: SafeArea(
                 bottom: false,
@@ -90,7 +94,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -115,7 +119,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                         'Your Family Memories',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -126,7 +130,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -152,7 +156,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                               vertical: 15,
                             ),
                             hintStyle: TextStyle(
-                              color: AppColors.textSecondary.withOpacity(0.7),
+                              color: AppColors.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
                           onChanged: (value) {
@@ -318,7 +322,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
             Icon(
               isSearching ? Icons.search_off : Icons.photo_library_outlined,
               size: 64,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -411,8 +415,8 @@ class _FilterChip extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withOpacity(0.2)
-                      : AppColors.primary.withOpacity(0.1),
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -466,7 +470,7 @@ class _MemoryCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -492,7 +496,7 @@ class _MemoryCard extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.7),
+                        Colors.black.withValues(alpha: 0.7),
                       ],
                     ),
                   ),
@@ -513,7 +517,7 @@ class _MemoryCard extends StatelessWidget {
                       Text(
                         DateFormat.yMMMd().format(memory.createdAt),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 12,
                         ),
                       ),
@@ -524,7 +528,7 @@ class _MemoryCard extends StatelessWidget {
               if (memory.isLocked)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.55),
+                    color: Colors.black.withValues(alpha: 0.55),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -556,7 +560,7 @@ class _MemoryCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -586,8 +590,8 @@ class _MemoryCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.gradientStart.withOpacity(0.7),
-                AppColors.gradientEnd.withOpacity(0.9),
+                AppColors.gradientStart.withValues(alpha: 0.7),
+                AppColors.gradientEnd.withValues(alpha: 0.9),
               ],
             ),
           ),
@@ -611,8 +615,8 @@ class _MemoryCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.gradientStart.withOpacity(0.7),
-            AppColors.gradientEnd.withOpacity(0.9),
+            AppColors.gradientStart.withValues(alpha: 0.7),
+            AppColors.gradientEnd.withValues(alpha: 0.9),
           ],
         ),
       ),
@@ -620,7 +624,7 @@ class _MemoryCard extends StatelessWidget {
         child: Icon(
           _typeIcon,
           size: 48,
-          color: Colors.white.withOpacity(0.5),
+          color: Colors.white.withValues(alpha: 0.5),
         ),
       ),
     );

@@ -24,3 +24,8 @@ export const supabaseConfig = {
   serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   postgresConnectionString: process.env.SUPABASE_POSTGRES_CONNECTION_STRING
 }
+
+export const emailConfig = {
+  resendApiKey: process.env.RESEND_API_KEY,
+  fromEmail: process.env.RESEND_FROM_EMAIL || 'Family Digital Heritage Vault <onboarding@resend.dev>'
+}

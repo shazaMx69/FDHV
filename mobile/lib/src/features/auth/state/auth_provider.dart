@@ -13,21 +13,35 @@ class AuthProvider extends ChangeNotifier {
   );
 
   bool _isAuthenticated = false;
+  // True while the initial session check is running — callers show a splash.
+  bool _bootstrapping = true;
+
   bool get isAuthenticated => _isAuthenticated;
+  bool get bootstrapping => _bootstrapping;
 
   User? get user => _supabase.auth.currentUser;
+
+  // Callback invoked when the user signs out so parent can reset other providers.
+  VoidCallback? onSignedOut;
 
   AuthProvider() {
     _bootstrap();
     _supabase.auth.onAuthStateChange.listen((data) {
+      final wasAuthenticated = _isAuthenticated;
       _isAuthenticated = data.session != null;
+      // Fire reset callback when transitioning from authenticated → unauthenticated.
+      if (wasAuthenticated && !_isAuthenticated) {
+        onSignedOut?.call();
+      }
       notifyListeners();
     });
   }
 
   Future<void> _bootstrap() async {
+    // currentSession is synchronous — no network call.
     final session = _supabase.auth.currentSession;
     _isAuthenticated = session != null;
+    _bootstrapping = false;
     notifyListeners();
   }
 
@@ -74,7 +88,6 @@ class AuthProvider extends ChangeNotifier {
         return AuthResult.signedIn();
       }
 
-      // Supabase often returns no session when email confirmation is required.
       final identities = user.identities;
       if (identities == null || identities.isEmpty) {
         return AuthResult.failure(
@@ -98,6 +111,7 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       await _clearAccessToken();
       _isAuthenticated = false;
+      onSignedOut?.call();
       notifyListeners();
     }
   }
@@ -112,23 +126,16 @@ class AuthProvider extends ChangeNotifier {
   String? get accessToken => _supabase.auth.currentSession?.accessToken;
 
   Future<void> _persistAccessToken(String token) async {
-    if (kIsWeb) {
-      // Supabase persists the session on web; secure storage is optional.
-      return;
-    }
+    if (kIsWeb) return;
     try {
       await _secureStorage.write(key: 'access_token', value: token);
-    } catch (_) {
-      // Session is still valid via Supabase client.
-    }
+    } catch (_) {}
   }
 
   Future<void> _clearAccessToken() async {
     try {
       await _secureStorage.delete(key: 'access_token');
-    } catch (_) {
-      // Ignore storage errors on sign out.
-    }
+    } catch (_) {}
   }
 
   String _friendlyAuthMessage(String? message) {

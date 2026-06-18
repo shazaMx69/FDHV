@@ -25,6 +25,29 @@ class _GenealogyTreeViewState extends State<GenealogyTreeView> {
   final Set<String> _collapsedUnits = {};
   final TransformationController _transformController = TransformationController();
 
+  // Cached layout — only recomputed when the tree data or collapse state changes.
+  late GenealogyTreeLayout _layout;
+
+  @override
+  void initState() {
+    super.initState();
+    _recomputeLayout();
+  }
+
+  @override
+  void didUpdateWidget(GenealogyTreeView old) {
+    super.didUpdateWidget(old);
+    if (old.tree != widget.tree) {
+      _recomputeLayout();
+    }
+  }
+
+  void _recomputeLayout() {
+    _layout = GenealogyLayoutEngine(widget.tree).compute(
+      collapsedUnitKeys: _collapsedUnits,
+    );
+  }
+
   @override
   void dispose() {
     _transformController.dispose();
@@ -38,6 +61,7 @@ class _GenealogyTreeViewState extends State<GenealogyTreeView> {
       } else {
         _collapsedUnits.add(unitKey);
       }
+      _recomputeLayout();
     });
   }
 
@@ -56,9 +80,7 @@ class _GenealogyTreeViewState extends State<GenealogyTreeView> {
       );
     }
 
-    final layout = GenealogyLayoutEngine(widget.tree).compute(
-      collapsedUnitKeys: _collapsedUnits,
-    );
+    final layout = _layout;
 
     return Column(
       children: [

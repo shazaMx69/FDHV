@@ -19,138 +19,132 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  bool _initialized = false;
 
-  void _switchTab(int index) {
-    setState(() => _currentIndex = index);
-  }
+  void _switchTab(int index) => setState(() => _currentIndex = index);
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
-    });
+    // Each time MainScreen mounts (fresh login or app reopen), load data.
+    // No _initialized guard — the splash screen already prevents double-mounts
+    // and providers are reset on sign-out, so loading is always fresh here.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
   }
 
   Future<void> _loadData() async {
-    if (_initialized) return;
-    _initialized = true;
+    if (!mounted) return;
 
     final familyProvider = context.read<FamilyProvider>();
     await familyProvider.loadFamilies();
 
-    if (familyProvider.selectedFamily != null && mounted) {
-      final memoryProvider = context.read<MemoryProvider>();
-      await memoryProvider.loadMemories(familyProvider.selectedFamily!.id);
+    if (!mounted) return;
+    final selectedFamily = familyProvider.selectedFamily;
+    if (selectedFamily != null) {
+      await context.read<MemoryProvider>().loadMemories(selectedFamily.id);
     }
 
-    _handleInviteDeepLink();
+    if (mounted) _handleInviteDeepLink();
   }
 
   void _handleInviteDeepLink() {
     final token = Uri.base.queryParameters['invite'];
     if (token == null || token.isEmpty || !mounted) return;
 
-    final familyProvider = context.read<FamilyProvider>();
-    familyProvider.setPendingInviteToken(token);
-
+    context.read<FamilyProvider>().setPendingInviteToken(token);
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => InviteAcceptScreen(token: token),
-      ),
+      MaterialPageRoute(builder: (_) => InviteAcceptScreen(token: token)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<FamilyProvider>(
-      builder: (context, familyProvider, child) {
-        final screens = <Widget>[
-          DashboardScreen(
-            onSwitchTab: _switchTab,
-            onOpenUpload: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const MemoryUploadScreen(),
-                ),
-              );
-            },
-          ),
-          const FamilyTreeScreen(),
-          const MemoryGalleryScreen(),
-          const ProfileScreen(),
-        ];
+    final screens = <Widget>[
+      DashboardScreen(
+        onSwitchTab: _switchTab,
+        onOpenUpload: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MemoryUploadScreen()),
+        ),
+      ),
+      const FamilyTreeScreen(),
+      const MemoryGalleryScreen(),
+      const ProfileScreen(),
+    ];
 
-        return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            sizing: StackFit.expand,
-            children: screens,
-          ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  children: [
-                    _NavItem(
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home,
-                      label: 'Home',
-                      isActive: _currentIndex == 0,
-                      onTap: () => setState(() => _currentIndex = 0),
-                    ),
-                    _NavItem(
-                      icon: Icons.account_tree_outlined,
-                      activeIcon: Icons.account_tree,
-                      label: 'Tree',
-                      isActive: _currentIndex == 1,
-                      onTap: () => setState(() => _currentIndex = 1),
-                    ),
-                    _NavItem(
-                      icon: Icons.photo_library_outlined,
-                      activeIcon: Icons.photo_library,
-                      label: 'Memories',
-                      isActive: _currentIndex == 2,
-                      onTap: () => setState(() => _currentIndex = 2),
-                    ),
-                    _NavItem(
-                      icon: Icons.person_outline,
-                      activeIcon: Icons.person,
-                      label: 'Profile',
-                      isActive: _currentIndex == 3,
-                      onTap: () => setState(() => _currentIndex = 3),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        sizing: StackFit.expand,
+        children: screens,
+      ),
+      bottomNavigationBar: _BottomNav(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+      ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _BottomNav extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _BottomNav({required this.currentIndex, required this.onTap});
+
+  static const _items = [
+    (icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
+    (icon: Icons.account_tree_outlined, activeIcon: Icons.account_tree, label: 'Tree'),
+    (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library, label: 'Memories'),
+    (icon: Icons.person_outline, activeIcon: Icons.person_rounded, label: 'Profile'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: AppColors.divider, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          child: Row(
+            children: List.generate(_items.length, (i) {
+              final item = _items[i];
+              final active = currentIndex == i;
+              return Expanded(
+                child: _NavTile(
+                  icon: item.icon,
+                  activeIcon: item.activeIcon,
+                  label: item.label,
+                  isActive: active,
+                  onTap: () => onTap(i),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavTile extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _NavItem({
+  const _NavTile({
     required this.icon,
     required this.activeIcon,
     required this.label,
@@ -160,36 +154,43 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: Icon(
                 isActive ? activeIcon : icon,
+                key: ValueKey(isActive),
                 color: isActive ? AppColors.primary : AppColors.textSecondary,
                 size: 22,
               ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                    color:
-                        isActive ? AppColors.primary : AppColors.textSecondary,
-                  ),
-                ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                color: isActive ? AppColors.primary : AppColors.textSecondary,
+                letterSpacing: isActive ? 0.2 : 0,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

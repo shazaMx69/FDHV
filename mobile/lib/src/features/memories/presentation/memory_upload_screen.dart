@@ -226,7 +226,7 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
                             ? Text('Born: ${DateFormat.yMMM().format(node.birthDate!)}')
                             : null,
                         secondary: CircleAvatar(
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                           child: Text(
                             node.initials,
                             style: const TextStyle(
@@ -275,7 +275,7 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
                   border: Border.all(color: AppColors.divider),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -304,7 +304,7 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
                                     },
                                   )
                                 : Container(
-                                    color: AppColors.primary.withOpacity(0.1),
+                                    color: AppColors.primary.withValues(alpha: 0.1),
                                     child: const Center(
                                       child: Icon(
                                         Icons.videocam,
@@ -338,7 +338,7 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
                           Icon(
                             Icons.cloud_upload_outlined,
                             size: 48,
-                            color: AppColors.textSecondary.withOpacity(0.5),
+                            color: AppColors.textSecondary.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 12),
                           const Text(
@@ -533,7 +533,7 @@ class _MediaButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

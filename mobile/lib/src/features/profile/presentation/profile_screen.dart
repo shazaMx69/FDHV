@@ -34,6 +34,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               decoration: const BoxDecoration(
                 gradient: AppColors.headerGradient,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
               ),
               child: SafeArea(
                 bottom: false,
@@ -58,7 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -91,7 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 15,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -99,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         'Member since ${_formatMemberSince(user?.createdAt)}',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                       if (family.selectedFamily != null) ...[
@@ -108,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           family.selectedFamily!.name,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white.withOpacity(0.85),
+                            color: Colors.white.withValues(alpha: 0.85),
                           ),
                         ),
                       ],
@@ -158,7 +162,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _SettingsTile(
                         icon: Icons.person_add_outlined,
                         title: 'Invite Members',
-                        onTap: () => _showInviteDialog(context, family),
+                        onTap: () {
+                          if (family.selectedFamily?.role != 'ADMIN') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Only family Admins can send invitations.'),
+                              ),
+                            );
+                            return;
+                          }
+                          _showInviteDialog(context, family);
+                        },
                       ),
                       const Divider(height: 1),
                       _SettingsTile(
@@ -454,84 +468,159 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
     String selectedRole = 'ADULT';
+    bool sending = false;
+    String? resultMessage;
+    bool success = false;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) => AlertDialog(
-          title: const Text(
-            'Invite Family Member',
-            style: TextStyle(color: AppColors.textPrimary),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'They will receive an email with a link to join your family vault.',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email address',
-                  prefixIcon: Icon(Icons.email_outlined),
+        builder: (dialogContext, setDialogState) {
+          Future<void> send() async {
+            if (!formKey.currentState!.validate()) return;
+            setDialogState(() {
+              sending = true;
+              resultMessage = null;
+            });
+
+            final message = await family.inviteMember(
+              email: emailController.text.trim(),
+              role: selectedRole,
+            );
+
+            if (!dialogContext.mounted) return;
+            setDialogState(() {
+              sending = false;
+              resultMessage = message;
+              success = family.error == null;
+            });
+          }
+
+          return AlertDialog(
+            title: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.person_add_outlined, color: AppColors.primary, size: 20),
                 ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: selectedRole,
-                decoration: const InputDecoration(
-                  labelText: 'Family Role',
-                  prefixIcon: Icon(Icons.security_outlined),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Invite Family Member',
+                    style: TextStyle(color: AppColors.textPrimary, fontSize: 17),
+                  ),
                 ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'ADMIN',
-                    child: Text('Admin'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'ADULT',
-                    child: Text('Editor'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'JUNIOR',
-                    child: Text('Viewer'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) setState(() => selectedRole = value);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () async {
-                if (emailController.text.trim().isEmpty) return;
-                final message = await family.inviteMember(
-                  email: emailController.text.trim(),
-                  role: selectedRole,
-                );
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(message ?? 'Invitation sent')),
-                  );
-                }
-              },
-              child: const Text('Send invite'),
-            ),
-          ],
-        ),
+            content: success
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: Color(0xFF059669), size: 48),
+                      const SizedBox(height: 12),
+                      Text(
+                        resultMessage ?? 'Invitation sent!',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppColors.textPrimary, height: 1.4),
+                      ),
+                    ],
+                  )
+                : Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'They will receive a branded email with a link to join your vault.',
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email address',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          enabled: !sending,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Enter an email address';
+                            if (!v.contains('@')) return 'Enter a valid email';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedRole,
+                          decoration: const InputDecoration(
+                            labelText: 'Family Role',
+                            prefixIcon: Icon(Icons.shield_outlined),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'ADMIN', child: Text('Admin — full access')),
+                            DropdownMenuItem(value: 'ADULT', child: Text('Editor — upload & manage tree')),
+                            DropdownMenuItem(value: 'JUNIOR', child: Text('Viewer — read only')),
+                          ],
+                          onChanged: sending ? null : (v) {
+                            if (v != null) setDialogState(() => selectedRole = v);
+                          },
+                        ),
+                        if (resultMessage != null && !success) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                            ),
+                            child: Text(
+                              resultMessage!,
+                              style: const TextStyle(color: AppColors.error, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+            actions: success
+                ? [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Done'),
+                    ),
+                  ]
+                : [
+                    TextButton(
+                      onPressed: sending ? null : () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: sending ? null : send,
+                      icon: sending
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.send_outlined, size: 18),
+                      label: Text(sending ? 'Sending...' : 'Send Invite'),
+                    ),
+                  ],
+          );
+        },
       ),
     );
+
+    emailController.dispose();
   }
 
   String _displayName(User? user) {
@@ -587,7 +676,7 @@ class _SettingsCard extends StatelessWidget {
           border: Border.all(color: AppColors.divider),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -627,7 +716,7 @@ class _SettingsTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 22),

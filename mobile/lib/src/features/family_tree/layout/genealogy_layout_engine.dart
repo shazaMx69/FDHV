@@ -54,6 +54,17 @@ class GenealogyLine {
     required this.to,
     this.kind = GenealogyLineKind.tree,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GenealogyLine &&
+          from == other.from &&
+          to == other.to &&
+          kind == other.kind;
+
+  @override
+  int get hashCode => Object.hash(from, to, kind);
 }
 
 enum GenealogyLineKind { spouse, tree }
@@ -205,6 +216,10 @@ class GenealogyLayoutEngine {
     }
 
     for (final rel in tree.relationships) {
+      // Guard: skip if either node is not in the tree (dangling relationship).
+      if (!_nodes.containsKey(rel.fromNodeId) ||
+          !_nodes.containsKey(rel.toNodeId)) continue;
+
       if (rel.type == RelationshipType.parent) {
         _parents[rel.toNodeId]!.add(rel.fromNodeId);
         _children[rel.fromNodeId]!.add(rel.toNodeId);
@@ -306,9 +321,14 @@ class GenealogyLayoutEngine {
     final lines = <GenealogyLine>[];
 
     if (unit.memberIds.length == 2) {
-      final a = memberLayouts[0].center;
-      final b = memberLayouts[1].center;
-      lines.add(GenealogyLine(from: a, to: b, kind: GenealogyLineKind.spouse));
+      // Draw edge-to-edge so the line is only visible in the gap between cards.
+      final a = memberLayouts[0];
+      final b = memberLayouts[1];
+      lines.add(GenealogyLine(
+        from: Offset(a.position.dx + a.size.width, a.center.dy),
+        to: Offset(b.position.dx, b.center.dy),
+        kind: GenealogyLineKind.spouse,
+      ));
     }
 
     if (collapsed || unit.children.isEmpty) {
@@ -345,7 +365,8 @@ class GenealogyLayoutEngine {
       }
     }
 
-    final childrenTotalWidth = childX > 0 ? childX - GenealogyLayoutMetrics.siblingGap : 0;
+    // childX is the correct total: the loop skips siblingGap after the last child.
+    final childrenTotalWidth = childX;
     final unitWidth = math.max(coupleWidth, childrenTotalWidth).toDouble();
     final coupleCenterX = unitWidth / 2;
     final coupleOffsetX = coupleCenterX - coupleWidth / 2;
