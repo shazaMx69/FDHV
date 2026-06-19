@@ -400,7 +400,7 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
               // Media picker
               Container(
                 width: double.infinity,
-                height: 200,
+                height: _selectedFile != null ? 200.0 : null,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
