@@ -4,6 +4,7 @@ import 'package:family_digital_heritage_vault/src/core/models/memory.dart';
 import 'package:family_digital_heritage_vault/src/core/theme/app_theme.dart';
 import 'package:family_digital_heritage_vault/src/features/family/state/family_provider.dart';
 import 'package:family_digital_heritage_vault/src/features/memories/state/memory_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -83,6 +84,35 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
     }
   }
 
+  Future<void> _pickAudio() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    if (result != null && result.files.isNotEmpty) {
+      final f = result.files.single;
+      if (f.path != null) {
+        setState(() {
+          _selectedFile = XFile(f.path!, name: f.name);
+          _selectedMediaType = MediaType.audio;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickDocument() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final f = result.files.single;
+      if (f.path != null) {
+        setState(() {
+          _selectedFile = XFile(f.path!, name: f.name);
+          _selectedMediaType = MediaType.document;
+        });
+      }
+    }
+  }
+
   Future<void> _selectDate() async {
     final date = await showDatePicker(
       context: context,
@@ -92,6 +122,108 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
     );
     if (date != null) {
       setState(() => _eventDate = date);
+    }
+  }
+
+  Widget _buildSelectedFilePreview() {
+    switch (_selectedMediaType) {
+      case MediaType.image:
+        return FutureBuilder<Uint8List>(
+          future: _selectedFile!.readAsBytes(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox(
+                width: double.infinity,
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return Image.memory(
+              snapshot.data!,
+              width: double.infinity,
+              height: 200,
+              fit: BoxFit.cover,
+            );
+          },
+        );
+      case MediaType.video:
+        return Container(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.videocam, size: 56, color: AppColors.primary),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    _selectedFile!.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      case MediaType.audio:
+        return Container(
+          color: const Color(0xFF059669).withValues(alpha: 0.08),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.audiotrack, size: 56, color: Color(0xFF059669)),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    _selectedFile!.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      case MediaType.document:
+        return Container(
+          color: const Color(0xFFD97706).withValues(alpha: 0.08),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.picture_as_pdf, size: 56, color: Color(0xFFD97706)),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    _selectedFile!.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
     }
   }
 
@@ -286,48 +418,17 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: _selectedMediaType == MediaType.image
-                                ? FutureBuilder<Uint8List>(
-                                    future: _selectedFile!.readAsBytes(),
-                                    builder: (context, snapshot) {
-                                      if (!snapshot.hasData) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
-                                      return Image.memory(
-                                        snapshot.data!,
-                                        width: double.infinity,
-                                        height: 200,
-                                        fit: BoxFit.cover,
-                                      );
-                                    },
-                                  )
-                                : Container(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.videocam,
-                                        size: 64,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
+                            child: _buildSelectedFilePreview(),
                           ),
                           Positioned(
                             top: 8,
                             right: 8,
                             child: IconButton(
-                              onPressed: () {
-                                setState(() => _selectedFile = null);
-                              },
+                              onPressed: () => setState(() => _selectedFile = null),
                               style: IconButton.styleFrom(
                                 backgroundColor: Colors.black54,
                               ),
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                              ),
+                              icon: const Icon(Icons.close, color: Colors.white),
                             ),
                           ),
                         ],
@@ -349,25 +450,35 @@ class _MemoryUploadScreenState extends State<MemoryUploadScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            alignment: WrapAlignment.center,
                             children: [
                               _MediaButton(
                                 icon: Icons.photo_library,
                                 label: 'Gallery',
                                 onTap: _pickImage,
                               ),
-                              const SizedBox(width: 12),
                               _MediaButton(
                                 icon: Icons.camera_alt,
                                 label: 'Camera',
                                 onTap: _takePhoto,
                               ),
-                              const SizedBox(width: 12),
                               _MediaButton(
                                 icon: Icons.videocam,
                                 label: 'Video',
                                 onTap: _pickVideo,
+                              ),
+                              _MediaButton(
+                                icon: Icons.audiotrack,
+                                label: 'Audio',
+                                onTap: _pickAudio,
+                              ),
+                              _MediaButton(
+                                icon: Icons.picture_as_pdf,
+                                label: 'Document',
+                                onTap: _pickDocument,
                               ),
                             ],
                           ),

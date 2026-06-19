@@ -5,8 +5,11 @@ import 'package:family_digital_heritage_vault/src/core/theme/app_theme.dart';
 import 'package:family_digital_heritage_vault/src/features/family/state/family_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:family_digital_heritage_vault/src/features/memories/presentation/inheritance_rule_screen.dart';
+import 'package:family_digital_heritage_vault/src/features/memories/presentation/memory_audio_player_screen.dart';
 import 'package:family_digital_heritage_vault/src/features/memories/presentation/memory_photo_viewer_screen.dart';
+import 'package:family_digital_heritage_vault/src/features/memories/presentation/memory_video_player_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 
 class MemoryDetailScreen extends StatefulWidget {
@@ -62,6 +65,45 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
     );
   }
 
+  void _openVideoPlayer() {
+    final url = _memory.displayUrl;
+    if (url == null || _memory.mediaType != MediaType.video) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MemoryVideoPlayerScreen(
+          videoUrl: url,
+          title: _memory.title,
+        ),
+      ),
+    );
+  }
+
+  void _openAudioPlayer() {
+    final url = _memory.displayUrl;
+    if (url == null || _memory.mediaType != MediaType.audio) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MemoryAudioPlayerScreen(
+          audioUrl: url,
+          title: _memory.title,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openDocument() async {
+    final url = _memory.displayUrl;
+    if (url == null || _memory.mediaType != MediaType.document) return;
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open document')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,14 +117,25 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
             iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
               background: GestureDetector(
-                onTap: _memory.mediaType == MediaType.image && _memory.displayUrl != null
-                    ? _openPhotoViewer
+                onTap: _memory.displayUrl != null
+                    ? () {
+                        switch (_memory.mediaType) {
+                          case MediaType.image:
+                            _openPhotoViewer();
+                          case MediaType.video:
+                            _openVideoPlayer();
+                          case MediaType.audio:
+                            _openAudioPlayer();
+                          case MediaType.document:
+                            _openDocument();
+                        }
+                      }
                     : null,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     _buildMediaPreview(),
-                    if (_memory.mediaType == MediaType.image && _memory.displayUrl != null)
+                    if (_memory.displayUrl != null)
                       Positioned(
                         right: 12,
                         bottom: 12,
@@ -92,14 +145,18 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                             color: Colors.black54,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.fullscreen, color: Colors.white, size: 18),
-                              SizedBox(width: 4),
+                              Icon(
+                                _hintIcon(_memory.mediaType),
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
                               Text(
-                                'Tap to enlarge',
-                                style: TextStyle(color: Colors.white, fontSize: 12),
+                                _hintLabel(_memory.mediaType),
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
                               ),
                             ],
                           ),
@@ -347,6 +404,84 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
       );
     }
 
+    if (_memory.mediaType == MediaType.video && _memory.displayUrl != null) {
+      return Container(
+        color: Colors.black87,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.85),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow, color: Colors.white, size: 56),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Tap to play video',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_memory.mediaType == MediaType.audio && _memory.displayUrl != null) {
+      return Container(
+        color: const Color(0xFF059669).withValues(alpha: 0.12),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.85),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow, color: Colors.white, size: 56),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Tap to play audio',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_memory.mediaType == MediaType.document && _memory.displayUrl != null) {
+      return Container(
+        color: const Color(0xFFD97706).withValues(alpha: 0.12),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD97706).withValues(alpha: 0.85),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.picture_as_pdf, color: Colors.white, size: 56),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Tap to open document',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       color: AppColors.gradientStart.withOpacity(0.1),
       child: Center(
@@ -382,6 +517,32 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
         return Icons.audiotrack;
       case MediaType.document:
         return Icons.description;
+    }
+  }
+
+  IconData _hintIcon(MediaType type) {
+    switch (type) {
+      case MediaType.image:
+        return Icons.fullscreen;
+      case MediaType.video:
+        return Icons.play_circle_outline;
+      case MediaType.audio:
+        return Icons.play_circle_outline;
+      case MediaType.document:
+        return Icons.open_in_new;
+    }
+  }
+
+  String _hintLabel(MediaType type) {
+    switch (type) {
+      case MediaType.image:
+        return 'Tap to enlarge';
+      case MediaType.video:
+        return 'Tap to play';
+      case MediaType.audio:
+        return 'Tap to play';
+      case MediaType.document:
+        return 'Tap to open';
     }
   }
 
@@ -431,6 +592,33 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                 onTap: () {
                   Navigator.pop(ctx);
                   _openPhotoViewer();
+                },
+              ),
+            if (_memory.mediaType == MediaType.video && _memory.displayUrl != null)
+              ListTile(
+                leading: const Icon(Icons.play_circle_outline, color: AppColors.primary),
+                title: const Text('Play video'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openVideoPlayer();
+                },
+              ),
+            if (_memory.mediaType == MediaType.audio && _memory.displayUrl != null)
+              ListTile(
+                leading: const Icon(Icons.play_circle_outline, color: Color(0xFF059669)),
+                title: const Text('Play audio'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openAudioPlayer();
+                },
+              ),
+            if (_memory.mediaType == MediaType.document && _memory.displayUrl != null)
+              ListTile(
+                leading: const Icon(Icons.open_in_new, color: Color(0xFFD97706)),
+                title: const Text('Open document'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openDocument();
                 },
               ),
             ListTile(

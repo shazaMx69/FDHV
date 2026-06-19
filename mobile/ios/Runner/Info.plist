@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Access your photo library to upload memories</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos or videos to add as memories</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record audio or video with sound for memories</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

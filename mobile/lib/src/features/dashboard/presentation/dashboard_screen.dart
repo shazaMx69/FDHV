@@ -161,11 +161,19 @@ class DashboardScreen extends StatelessWidget {
                     final memory = recentMemories[i];
                     return _RecentMemoryTile(
                       memory: memory,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => MemoryDetailScreen(memory: memory),
-                        ),
-                      ),
+                      onTap: () {
+                        if (memory.isLocked) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(memory.inheritanceLockLabel)),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => MemoryDetailScreen(memory: memory),
+                          ),
+                        );
+                      },
                     );
                   },
                   childCount: recentMemories.length,
@@ -890,6 +898,7 @@ class _RecentMemoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typeColor = _colorForType(memory.mediaType);
+    final locked = memory.isLocked;
 
     return Material(
       color: Colors.white,
@@ -902,19 +911,32 @@ class _RecentMemoryTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(
+              color: locked
+                  ? AppColors.primary.withValues(alpha: 0.3)
+                  : AppColors.divider,
+            ),
           ),
           child: Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: typeColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(_iconForType(memory.mediaType),
-                    color: typeColor, size: 24),
+              Stack(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: locked
+                          ? AppColors.primary.withValues(alpha: 0.08)
+                          : typeColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      locked ? Icons.lock_clock : _iconForType(memory.mediaType),
+                      color: locked ? AppColors.primary : typeColor,
+                      size: 24,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -925,46 +947,70 @@ class _RecentMemoryTile extends StatelessWidget {
                       memory.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: locked
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: typeColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            memory.mediaType.displayName,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: typeColor,
+                        if (locked)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              memory.inheritanceLockLabel,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          )
+                        else ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: typeColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              memory.mediaType.displayName,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: typeColor,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _formatTimeAgo(memory.createdAt),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatTimeAgo(memory.createdAt),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.textSecondary, size: 20),
+              Icon(
+                locked ? Icons.lock_outline : Icons.chevron_right,
+                color: locked ? AppColors.primary : AppColors.textSecondary,
+                size: 20,
+              ),
             ],
           ),
         ),
