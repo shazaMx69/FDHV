@@ -95,8 +95,8 @@ class ApiClient {
         text.contains('timed out') ||
         text.contains('timeout')) {
       return ApiException(
-        'Cannot reach the API at $baseUrl. '
-        'Start the backend: cd backend && npm run dev',
+        'Could not connect to the server. '
+        'Check your internet connection and try again.',
       );
     }
 
