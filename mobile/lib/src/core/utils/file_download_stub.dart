@@ -1,8 +1,17 @@
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
-/// Non-web platforms: open the app in Chrome/web for PDF export, or extend with platform save.
+/// Android / iOS: write PDF to a temp file then open the native share sheet.
 Future<void> downloadPdfBytes(Uint8List bytes, String filename) async {
-  throw UnsupportedError(
-    'PDF download is available when running on web (Chrome). Filename: $filename',
+  final dir = await getTemporaryDirectory();
+  final file = File('${dir.path}/$filename');
+  await file.writeAsBytes(bytes, flush: true);
+  await SharePlus.instance.share(
+    ShareParams(
+      files: [XFile(file.path, mimeType: 'application/pdf')],
+      subject: filename,
+    ),
   );
 }
