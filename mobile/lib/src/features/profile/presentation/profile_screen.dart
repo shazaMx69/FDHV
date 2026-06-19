@@ -565,9 +565,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             prefixIcon: Icon(Icons.shield_outlined),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'ADMIN', child: Text('Admin — full access')),
-                            DropdownMenuItem(value: 'ADULT', child: Text('Editor — upload & manage tree')),
-                            DropdownMenuItem(value: 'JUNIOR', child: Text('Viewer — read only')),
+                            DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
+                            DropdownMenuItem(value: 'ADULT', child: Text('Editor')),
+                            DropdownMenuItem(value: 'JUNIOR', child: Text('Viewer')),
                           ],
                           onChanged: sending ? null : (v) {
                             if (v != null) setDialogState(() => selectedRole = v);
