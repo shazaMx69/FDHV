@@ -459,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showInviteDialog(BuildContext context, FamilyProvider family) {
+  Future<void> _showInviteDialog(BuildContext context, FamilyProvider family) async {
     if (!family.hasFamily) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Create a family vault first.')),
@@ -474,7 +474,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String? resultMessage;
     bool success = false;
 
-    showDialog(
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
