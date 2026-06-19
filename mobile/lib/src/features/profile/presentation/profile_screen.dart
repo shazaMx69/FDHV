@@ -315,79 +315,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     AuthProvider auth,
     String currentName,
   ) async {
-    final controller = TextEditingController(text: currentName);
-    final formKey = GlobalKey<FormState>();
-    var saving = false;
-
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) {
-          Future<void> save() async {
-            if (!formKey.currentState!.validate()) return;
-            setDialogState(() => saving = true);
-            try {
-              await auth.updateDisplayName(controller.text.trim());
-              if (dialogContext.mounted) Navigator.pop(dialogContext);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profile updated')),
-                );
-              }
-            } catch (e) {
-              if (dialogContext.mounted) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text('Update failed: $e')),
-                );
-              }
-            } finally {
-              if (dialogContext.mounted) {
-                setDialogState(() => saving = false);
-              }
-            }
-          }
-
-          return AlertDialog(
-            title: const Text('Edit Profile'),
-            content: Form(
-              key: formKey,
-              child: TextFormField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: 'Display name',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                enabled: !saving,
-                validator: (v) {
-                  if (v == null || v.trim().length < 2) {
-                    return 'Enter at least 2 characters';
-                  }
-                  return null;
-                },
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: saving ? null : () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: saving ? null : save,
-                child: saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save'),
-              ),
-            ],
-          );
-        },
+      builder: (_) => _EditProfileDialog(
+        auth: auth,
+        currentName: currentName,
       ),
     );
-
-    controller.dispose();
   }
 
   void _showManageFamilySheet(BuildContext context, FamilyProvider family) {
@@ -740,6 +674,102 @@ class _SettingsTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Edit profile dialog — proper StatefulWidget avoids StatefulBuilder issues ─
+
+class _EditProfileDialog extends StatefulWidget {
+  final AuthProvider auth;
+  final String currentName;
+
+  const _EditProfileDialog({required this.auth, required this.currentName});
+
+  @override
+  State<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends State<_EditProfileDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _controller;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    try {
+      await widget.auth.updateDisplayName(_controller.text.trim());
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Update failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Profile'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _controller,
+          decoration: const InputDecoration(
+            labelText: 'Display name',
+            prefixIcon: Icon(Icons.person_outline),
+          ),
+          enabled: !_saving,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: _saving ? null : (_) => _save(),
+          validator: (v) {
+            if (v == null || v.trim().length < 2) {
+              return 'Enter at least 2 characters';
+            }
+            return null;
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Save'),
+        ),
+      ],
     );
   }
 }
